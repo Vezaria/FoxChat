@@ -22,6 +22,7 @@ public class ServerSelect {
 	private JFrame frmServerSelect;
 	private PlaceholderTextField txtAddress;
 	private PlaceholderTextField txtNickname;
+	private JButton btnConnect;
 	private JLabel lblStatus;
 	
 	public ServerSelect() {
@@ -57,7 +58,7 @@ public class ServerSelect {
 		txtNickname.setPlaceholder("Nickname");
 		txtNickname.setColumns(10);
 		
-		JButton btnConnect = new JButton("Connect");
+		btnConnect = new JButton("Connect");
 		btnConnect.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String nickname = txtNickname.getText().trim();
@@ -70,9 +71,28 @@ public class ServerSelect {
 					lblStatus.setText("You must enter an address!");
 					return;
 				}
-				lblStatus.setText("Connecting...");
+				ChatClient client = new ChatClient();
 				
-				hide();
+				lblStatus.setText("Connecting...");
+
+				lockControls();
+				new Thread(new Runnable() {
+					public void run() {
+						State state = client.connect(address, nickname);
+						if(state == State.BANNED) {
+							lblStatus.setText("Have been banned from this server!");
+						} else if(state == State.ILLEGAL_NAME) {
+							lblStatus.setText("That name is not allowed!");
+						} else if(state == State.DISCONNECTED) {
+							lblStatus.setText("Could not connect.");
+						} else if(state == State.CONNECTED) {
+							lblStatus.setText("Connected!");
+							new ChatWindow(client);
+							hide();
+						}
+						unlockControls();
+					}
+				}).start();
 			}
 		});
 		
@@ -124,5 +144,17 @@ public class ServerSelect {
 	
 	public void hide() {
 		frmServerSelect.setVisible(false);
+	}
+	
+	public void lockControls() {
+		txtAddress.setEnabled(false);
+		txtNickname.setEnabled(false);
+		btnConnect.setEnabled(false);
+	}
+	
+	public void unlockControls() {
+		txtAddress.setEnabled(true);
+		txtNickname.setEnabled(true);
+		btnConnect.setEnabled(true);
 	}
 }
